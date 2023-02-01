@@ -1,11 +1,21 @@
 {% ckan_extends %}
 
-{% block secondary_content %}
-
-  {% set dataset_extent = h.get_pkg_dict_extra(c.pkg_dict, 'spatial', '') %}
-  {% if dataset_extent %}
-    {% snippet "spatial/snippets/dataset_map_sidebar.html", extent=dataset_extent %}
-  {% endif %}
+{% block package_info %}
 
   {{ super() }}
-{% endblock %}
+
+  {#% set dataset_extent = h.get_pkg_dict_extra(c.pkg_dict, 'spatial', '') %#}
+  {% set dataset_extent = c.pkg_dict.get('spatial', '') %}
+
+  {% if dataset_extent %}
+    {% snippet "wakeua/snippets/dataset_map_sidebar.html", extent=dataset_extent %}
+  {% else %}
+     <section class="module module-narrow dataset-map">
+     <h2 class="module-heading"><i class="fa fa-globe"></i> {{ _('Dataset extent') }}</h2>
+       <br>
+       <p class="empty">&nbsp; &nbsp; {{ _('No Spatial Information') }}</p>
+       <br>
+     </section>
+  {% endif %}
+
+{% endblock%}
