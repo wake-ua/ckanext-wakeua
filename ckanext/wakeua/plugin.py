@@ -1,5 +1,7 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+import os
+from ckan.lib.webassets_tools import add_public_path
 
 
 class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
@@ -10,7 +12,12 @@ class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'templates')
         toolkit.add_public_directory(config_, 'public')
-        toolkit.add_resource('fanstatic', 'wakeua')
+        toolkit.add_resource('public', 'wakeua')
+
+        asset_path = os.path.join(
+            os.path.dirname(__file__), 'public'
+        )
+        add_public_path(asset_path, '/')
 
     # IDatasetForm
     def _modify_package_schema(self, schema):

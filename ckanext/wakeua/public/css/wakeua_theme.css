@@ -1,0 +1,71 @@
+
+/* =====================================================
+   The "account masthead" bar across the top of the site
+   ===================================================== */
+
+.account-masthead {
+    background-color: rgb(3, 4, 94);
+}
+.account-masthead .account ul li a {
+  color: #f2f4fd;
+}
+/* ========================================================================
+   The main masthead bar that contains the site logo, nav links, and search
+   ======================================================================== */
+
+.masthead {
+  background-color: #0077B6;
+}
+
+.masthead .navigation .nav-pills li a:focus,
+.masthead .navigation .nav-pills li.active a {
+  background-color: rgba(3, 4, 94, 0.40);
+}
+
+.masthead .navigation .nav-pills li a:hover,
+.masthead .navigation .nav-pills li.hover a {
+  background-color: rgba(3, 4, 94, 0.60);
+}
+
+/* ====================================
+   The footer at the bottom of the site
+   ==================================== */
+
+.site-footer,
+body {
+  background-color: rgb(3, 4, 94);
+}
+
+/* Homepage search */
+.homepage .module-search .module-content {
+  background-color: rgb(0, 119, 182);
+}
+
+.homepage .module-search .tags {
+  background-color: rgb(3, 4, 94);
+}
+
+/* BUTTONS */
+.btn-primary {
+  color: #fff;
+  background-color: #0077B6;
+  border-color: #00324d;
+}
+.btn-primary.focus {
+  color: #fff;
+  background-color: #0077B6;
+  border-color: #00324d;
+}
+.btn-primary:hover {
+  color: #fff;
+  background-color: #006399;
+  border-color: #00324;
+}
+
+.btn-primary.active,
+.open > .dropdown-toggle.btn-primary {
+  color: #fff;
+  background-color: #004266;
+  background-image: none;
+  border-color: #002133;
+}

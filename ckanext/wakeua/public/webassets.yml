@@ -1,0 +1,6 @@
+
+wakeua_theme_css:
+   filter: cssrewrite
+   output: wakeua/%(version)s-wakeua_theme.css
+   contents:
+     - css/wakeua_theme.css
