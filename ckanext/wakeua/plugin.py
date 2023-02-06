@@ -2,11 +2,13 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import os
 from ckan.lib.webassets_tools import add_public_path
+from ckan.lib.plugins import DefaultTranslation
 
 
-class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
+class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IDatasetForm)
+    plugins.implements(plugins.ITranslation, inherit=True)
 
     # IConfigurer
     def update_config(self, config_):
@@ -18,6 +20,13 @@ class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             os.path.dirname(__file__), 'public'
         )
         add_public_path(asset_path, '/')
+
+    # ITranslation
+    def i18n_directory(self):
+        i18n_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'i18n'
+        )
+        return i18n_path
 
     # IDatasetForm
     def _modify_package_schema(self, schema):
