@@ -1,0 +1,20 @@
+{% extends "page.html" %}
+
+{% block subtitle %}{{ _('Legal Notice') }}{% endblock %}
+
+{% block breadcrumb_content %}
+  <li class="active">{% link_for _('Legal Notice'), 'home.legal-notice' %}</li>
+{% endblock %}
+
+{% block primary %}
+  <article class="module" role="main">
+    <div class="module-content">
+          <h2 class="page-heading">{{ _('Legal Notice') }}</h2>
+            {% set current_lang = request.environ.CKAN_LANG %}
+            {% set snippet_url = 'wakeua/snippets/legal_notice_{0}.html'.format(current_lang) %}
+            {% snippet snippet_url %}
+    </div>
+  </article>
+{% endblock %}
+
+{% block secondary %}{% endblock %}

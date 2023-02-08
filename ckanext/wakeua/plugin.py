@@ -3,12 +3,15 @@ import ckan.plugins.toolkit as toolkit
 import os
 from ckan.lib.webassets_tools import add_public_path
 from ckan.lib.plugins import DefaultTranslation
+import ckanext.wakeua.blueprints as blueprints
 
 
 class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm, DefaultTranslation):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.ITranslation, inherit=True)
+    plugins.implements(plugins.IBlueprint)
+
 
     # IConfigurer
     def update_config(self, config_):
@@ -66,3 +69,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm, DefaultT
         # This plugin doesn't handle any special package types, it just
         # registers itself as the default (above).
         return []
+
+    # IBlueprint
+    def get_blueprint(self):
+        return blueprints.get_blueprints(self.name, self.__module__)

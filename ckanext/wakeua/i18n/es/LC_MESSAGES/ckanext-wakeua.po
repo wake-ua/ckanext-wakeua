@@ -19,6 +19,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.7.0\n"
 
+#: ckanext/wakeua/templates/home/legal-notice.html:3
+#: ckanext/wakeua/templates/home/legal-notice.html:6
+msgid "Legal Notice"
+msgstr "Aviso Legal"
+
 #: ckanext/wakeua/templates/home/snippets/acknowledgements.html:3
 msgid "Acknowledgements"
 msgstr "Proyecto cofinanciado por la Comunidad Valenciana"

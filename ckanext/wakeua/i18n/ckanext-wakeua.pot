@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-wakeua 0.0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-02-06 20:33+0100\n"
+"POT-Creation-Date: 2023-02-08 16:24+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,11 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.7.0\n"
+
+#: ckanext/wakeua/templates/home/legal-notice.html:3
+#: ckanext/wakeua/templates/home/legal-notice.html:6
+msgid "Legal Notice"
+msgstr ""
 
 #: ckanext/wakeua/templates/home/snippets/acknowledgements.html:3
 msgid "Acknowledgements"
