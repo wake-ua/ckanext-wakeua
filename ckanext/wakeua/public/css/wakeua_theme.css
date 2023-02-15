@@ -59,7 +59,7 @@ body {
 .btn-primary:hover {
   color: #fff;
   background-color: #006399;
-  border-color: #00324;
+  border-color: #00324d;
 }
 
 .btn-primary.active,

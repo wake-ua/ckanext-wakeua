@@ -1,0 +1,30 @@
+{
+  "scheming_version": 2,
+  "about": "An implementation of presets the DCAT-AP UA WAKE Schema to support multilingual",
+  "about_url": "https://github.com/wake-ua/ckanext-wakeua",
+  "presets": [
+       {
+      "preset_name": "multilingual_output",
+      "values": {
+        "validators": "ignore",
+        "output_validators": "wakeua_multilingual_text_output"
+      }
+    },
+    {
+      "preset_name": "multilingual_text",
+      "values": {
+        "form_snippet": "fluent_text.html",
+        "validators": "fluent_text",
+        "output_validators": "wakeua_multilingual_text_output"
+      }
+    },
+    {
+      "preset_name": "multilingual_markdown",
+      "values": {
+        "form_snippet": "fluent_markdown.html",
+        "validators": "fluent_text",
+        "output_validators": "wakeua_multilingual_text_output"
+      }
+    }
+  ]
+}
