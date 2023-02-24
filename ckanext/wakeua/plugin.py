@@ -16,6 +16,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IPackageController, inherit=True)
+    plugins.implements(plugins.IOrganizationController, inherit=True)
 
     LANGS = config.get('ckan.locale_order') or ["es"]
 
@@ -33,10 +34,12 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
     def before_view(self, pkg_dict):
 
         for key, value in pkg_dict.items():
-            if isinstance(value, dict):
-                translated_field = wh.wakeua_extract_lang_value(value)
-                if translated_field:
-                    pkg_dict[key] = translated_field
+            if key not in ['spatial']:
+                json_value = wh.to_json_dict_safe(value)
+                if isinstance(json_value, dict):
+                    translated_field = wh.wakeua_extract_lang_value(json_value)
+                    if translated_field:
+                        pkg_dict[key] = translated_field
 
         # resources
         for resource in pkg_dict.get('resources', []):
@@ -74,6 +77,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
             'resource_display_name': wh.wakeua_resource_display_name,
             'get_translated': wh.wakeua_get_translated,
             'wakeua_extract_lang_value': wh.wakeua_extract_lang_value,
+            'wakeua_force_translate': wh.wakeua_force_translate,
             'markdown_extract': wh.wakeua_markdown_extract,
             'truncate': wh.wakeua_truncate,
             'link_to': wh.wakeua_link_to,

@@ -52,6 +52,10 @@ def wakeua_get_translated(data_dict, field):
         return h.get_translated(data_dict, field)
 
 
+def wakeua_force_translate(text):
+    return wakeua_extract_lang_value(to_json_dict_safe(text))
+
+
 def wakeua_markdown_extract(text, extract_length=190):
     ''' return the plain text representation of markdown encoded text.  That
     is the texted without any html tags.  If extract_length is 0 then it

@@ -38,7 +38,8 @@
     {
       "field_name": "owner_org",
       "label": "Organization",
-      "preset": "dataset_organization"
+      "validators": "owner_org_validator unicode_safe",
+      "form_snippet": "wakeua_multilingual_organization.html"
     },
     {
       "field_name": "spatial",
