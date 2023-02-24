@@ -82,4 +82,5 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
             'markdown_extract': wh.wakeua_markdown_extract,
             'truncate': wh.wakeua_truncate,
             'link_to': wh.wakeua_link_to,
+            'list_dict_filter': wh.wakeua_list_dict_filter,
         }

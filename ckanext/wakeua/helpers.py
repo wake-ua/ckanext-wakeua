@@ -88,3 +88,12 @@ def to_json_dict_safe(text_input):
 def wakeua_link_to(label, url, **attrs):
     string_label = wakeua_extract_lang_value(to_json_dict_safe(label))
     return h.link_to(string_label, url, **attrs)
+
+
+def wakeua_list_dict_filter(list_, search_field, output_field, value):
+
+    for item in list_:
+        if item.get(search_field) == value:
+            output_value = wakeua_force_translate(item.get(output_field, value))
+            return output_value
+    return value
