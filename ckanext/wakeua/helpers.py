@@ -46,8 +46,8 @@ def wakeua_extract_lang_value(field):
 
 
 def wakeua_get_translated(data_dict, field):
-    if isinstance(data_dict.get(field, ""), dict):
-        return wakeua_extract_lang_value(data_dict.get(field, ""))
+    if isinstance(data_dict.get(field, ""), dict) or isinstance(data_dict.get(field, []), str):
+        return wakeua_force_translate(data_dict.get(field, ""))
     else:
         return h.get_translated(data_dict, field)
 

@@ -17,6 +17,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IPackageController, inherit=True)
     plugins.implements(plugins.IOrganizationController, inherit=True)
+    plugins.implements(plugins.IGroupController, inherit=True)
 
     LANGS = config.get('ckan.locale_order') or ["es"]
 

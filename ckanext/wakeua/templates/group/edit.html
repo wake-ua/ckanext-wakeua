@@ -1,0 +1,11 @@
+{% ckan_extends %}
+
+
+{% block breadcrumb_content %}
+  <li>{% link_for _('Groups'), named_route=group_type+'.index' %}</li>
+  {% block breadcrumb_content_inner %}
+    {% set group_display_name = h.wakeua_extract_lang_value(group.title) or group.name %}
+    <li>{% link_for group_display_name|truncate(35), named_route=group_type+'.read', id=group.name %}</li>
+    <li class="active">{% link_for _('Manage'), named_route=group_type+'.edit', id=group.name %}</li>
+  {% endblock %}
+{% endblock %}
