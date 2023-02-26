@@ -32,6 +32,8 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
         )
         add_public_path(asset_path, '/')
 
+    # IPackageController
+    # IOrganizationController IGroupController
     def before_view(self, pkg_dict):
 
         for key, value in pkg_dict.items():
@@ -49,6 +51,19 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
                     resource[key] = wh.wakeua_extract_lang_value(value)
 
         return pkg_dict
+
+    def after_create(self, context, data_dict):
+        for resource in data_dict["resources"]:
+            plugins.toolkit.get_action('xloader_submit')(context, {
+                'resource_id': resource["id"]
+            })
+
+    def after_update(self, context, data_dict):
+        for resource in data_dict["resources"]:
+            plugins.toolkit.get_action('xloader_submit')(context, {
+                'resource_id': resource["id"]
+            })
+
 
     # ITranslation
     def i18n_directory(self):
@@ -83,4 +98,5 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
             'truncate': wh.wakeua_truncate,
             'link_to': wh.wakeua_link_to,
             'list_dict_filter': wh.wakeua_list_dict_filter,
+            'render_markdown': wh.wakeua_render_markdown,
         }

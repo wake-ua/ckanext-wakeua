@@ -1,3 +1,4 @@
+
 import json
 import ckan.plugins.toolkit as toolkit
 from ckan.common import config
@@ -5,9 +6,7 @@ import ckan.lib.helpers as h
 
 
 def wakeua_dataset_display_name(package_or_package_dict):
-
     if isinstance(package_or_package_dict, dict):
-
         return wakeua_extract_lang_value(package_or_package_dict['title']) or \
             package_or_package_dict['name']
     else:
@@ -57,12 +56,8 @@ def wakeua_force_translate(text):
 
 
 def wakeua_markdown_extract(text, extract_length=190):
-    ''' return the plain text representation of markdown encoded text.  That
-    is the texted without any html tags.  If extract_length is 0 then it
-    will not be truncated.'''
     if not text:
         return ''
-
     if isinstance(text, dict):
         return h.markdown_extract(wakeua_extract_lang_value(text), extract_length)
     else:
@@ -91,9 +86,17 @@ def wakeua_link_to(label, url, **attrs):
 
 
 def wakeua_list_dict_filter(list_, search_field, output_field, value):
-
     for item in list_:
         if item.get(search_field) == value:
             output_value = wakeua_force_translate(item.get(output_field, value))
             return output_value
     return value
+
+
+def wakeua_render_markdown(data, auto_link=True, allow_html=False):
+    if not data:
+        return ''
+    if isinstance(data, dict):
+        return h.render_markdown(wakeua_extract_lang_value(data), auto_link, allow_html)
+    else:
+        return h.render_markdown(data, auto_link, allow_html)
