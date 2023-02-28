@@ -53,13 +53,13 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
         return pkg_dict
 
     def after_create(self, context, data_dict):
-        for resource in data_dict["resources"]:
+        for resource in data_dict.get("resources", []):
             plugins.toolkit.get_action('xloader_submit')(context, {
                 'resource_id': resource["id"]
             })
 
     def after_update(self, context, data_dict):
-        for resource in data_dict["resources"]:
+        for resource in data_dict.get("resources", []):
             plugins.toolkit.get_action('xloader_submit')(context, {
                 'resource_id': resource["id"]
             })
