@@ -27,7 +27,27 @@
       "field_name": "tag_string",
       "label": "Tags",
       "preset": "tag_string_autocomplete",
-      "form_placeholder": "eg. economy, mental health, government"
+      "form_placeholder": "eg. economy, mental health, government",
+       "output_validators": "wakeua_tags_output"
+    },
+    {
+      "field_name": "tag_string_schemaorg",
+      "label": "Tags SchemaOrg",
+      "validators": "ignore_missing",
+      "classes": [
+        "control-full"
+      ],
+      "form_attrs": {
+        "data-module": "autocomplete",
+        "data-module-tags": "",
+        "data-module-source": "/api/2/util/tag/autocomplete?vocabulary_id=schemaorg&incomplete=?",
+        "class": ""
+      },
+      "display_snippet": "wakeua_vocabulary_tags.html"
+    },{
+      "field_name": "schemaorg_tags",
+      "display_snippet": null,
+      "form_snippet": null
     },
     {
       "field_name": "license_id",

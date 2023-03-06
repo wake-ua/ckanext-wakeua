@@ -1,0 +1,10 @@
+{% set schemaorg_tags = h.wakeua_show_dataset_vocabulary_tags(data.get(field.field_name, "")) %}
+{% set _class='tag-list' %}
+
+  <ul class="{{ _class }}">
+    {% for tag in schemaorg_tags %}
+      <li>
+        <a class="tag" href="{% url_for 'dataset.search', schemaorg_tags=tag.name %}">{{ h.truncate(tag.display_name, 22) }}</a>
+      </li>
+    {% endfor %}
+  </ul>

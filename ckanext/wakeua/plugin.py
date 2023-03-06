@@ -2,6 +2,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan.common import config
 import os
+import json
 from ckan.lib.webassets_tools import add_public_path
 from ckan.lib.plugins import DefaultTranslation
 import ckanext.wakeua.blueprints as blueprints
@@ -18,6 +19,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
     plugins.implements(plugins.IPackageController, inherit=True)
     plugins.implements(plugins.IOrganizationController, inherit=True)
     plugins.implements(plugins.IGroupController, inherit=True)
+    plugins.implements(plugins.IFacets, inherit=True)
 
     LANGS = config.get('ckan.locale_order') or ["es"]
 
@@ -41,8 +43,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
                 json_value = wh.to_json_dict_safe(value)
                 if isinstance(json_value, dict):
                     translated_field = wh.wakeua_extract_lang_value(json_value)
-                    if translated_field:
-                        pkg_dict[key] = translated_field
+                    pkg_dict[key] = translated_field
 
         # resources
         for resource in pkg_dict.get('resources', []):
@@ -64,6 +65,16 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
                 'resource_id': resource["id"]
             })
 
+    def before_index(self, pkg_dict):
+        extras_tag_string_schemaorg = pkg_dict.get('extras_tag_string_schemaorg', "")
+        if extras_tag_string_schemaorg:
+            pkg_dict["schemaorg_tags"] = [tag.strip() for tag in extras_tag_string_schemaorg.split(',')]
+        return pkg_dict
+
+    # IFacets
+    def dataset_facets(self, facets_dict, package_type):
+        facets_dict['schemaorg_tags'] = plugins.toolkit._('Tags SchemaOrg')
+        return facets_dict
 
     # ITranslation
     def i18n_directory(self):
@@ -81,6 +92,7 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
         return {
             'wakeua_multilingual_text_output': v.wakeua_multilingual_text_output,
             'wakeua_parse_json': v.wakeua_parse_json,
+            'wakeua_tags_output': v.wakeua_tags_output
         }
 
     # ITemplateHelpers
@@ -99,4 +111,8 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
             'link_to': wh.wakeua_link_to,
             'list_dict_filter': wh.wakeua_list_dict_filter,
             'render_markdown': wh.wakeua_render_markdown,
+            'get_facet_items_dict': wh.wakeua_get_facet_items_dict,
+            'wakeua_extract_tags': wh.wakeua_extract_tags,
+            'wakeua_get_vocabulary_tags': wh.wakeua_get_vocabulary_tags,
+            'wakeua_show_dataset_vocabulary_tags': wh.wakeua_show_dataset_vocabulary_tags
         }
