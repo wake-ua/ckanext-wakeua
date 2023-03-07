@@ -74,7 +74,11 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
     # IFacets
     def dataset_facets(self, facets_dict, package_type):
         facets_dict['schemaorg_tags'] = plugins.toolkit._('Tags SchemaOrg')
-        return facets_dict
+        facets_order = ['groups', 'schemaorg_tags', 'tags', 'organization', 'res_format', 'license_id']
+        facets_order += [ key for key in facets_dict.keys() if key not in facets_order]
+        print("dataset_facets", facets_order)
+        sorted_dict = {facet: facets_dict[facet] for facet in facets_order}
+        return sorted_dict
 
     # ITranslation
     def i18n_directory(self):
