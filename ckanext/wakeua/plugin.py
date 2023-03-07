@@ -118,5 +118,6 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
             'get_facet_items_dict': wh.wakeua_get_facet_items_dict,
             'wakeua_extract_tags': wh.wakeua_extract_tags,
             'wakeua_get_vocabulary_tags': wh.wakeua_get_vocabulary_tags,
-            'wakeua_show_dataset_vocabulary_tags': wh.wakeua_show_dataset_vocabulary_tags
+            'wakeua_show_dataset_vocabulary_tags': wh.wakeua_show_dataset_vocabulary_tags,
+            'wakeua_truncate_facet_label': wh.wakeua_truncate_facet_label,
         }

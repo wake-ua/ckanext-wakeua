@@ -26,6 +26,13 @@
             ]
 ]]}" %}
 
-{{ super() }}
-
+  <div class="filters">
+    <div>
+        {% set label_function = h.wakeua_truncate_facet_label %}
+      {% for facet in facet_titles %}
+        {{ h.snippet('snippets/facet_list.html', title=facet_titles[facet], label_function=label_function, name=facet, search_facets=search_facets)  }}
+      {% endfor %}
+    </div>
+    <a class="close no-text hide-filters"><i class="fa fa-times-circle"></i><span class="text">close</span></a>
+  </div>
 {% endblock %}

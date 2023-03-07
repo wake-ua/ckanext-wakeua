@@ -85,7 +85,6 @@ def wakeua_link_to(label, url, **attrs):
 
 
 def wakeua_list_dict_filter(list_, search_field, output_field, value):
-    print("** wakeua_list_dict_filter", list_, search_field, output_field, value)
     for item in list_:
         if item.get(search_field) == value:
             output_value = wakeua_force_translate(item.get(output_field, value))
@@ -152,5 +151,8 @@ def wakeua_show_dataset_vocabulary_tags(data):
         if tag_string.rsplit('-',1)[-1] == toolkit.request.environ['CKAN_LANG']:
             new_tag = {"name": tag_string, "display_name": tag_string.rsplit('-', 1)[0]}
             tags += [new_tag]
-    print("wakeua_show_dataset_vocabulary_tags DATA", data, tags)
     return tags
+
+
+def wakeua_truncate_facet_label(label):
+    return wakeua_truncate(label["display_name"], 35)
