@@ -32,7 +32,7 @@
     },
     {
       "field_name": "tag_string_schemaorg",
-      "label": "Tags SchemaOrg",
+      "label": "Vocabulary",
       "validators": "ignore_missing",
       "classes": [
         "control-full"
