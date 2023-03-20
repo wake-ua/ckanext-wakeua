@@ -44,7 +44,8 @@
         "class": ""
       },
       "display_snippet": "wakeua_vocabulary_tags.html"
-    },{
+    }
+   ,{
       "field_name": "schemaorg_tags",
       "display_snippet": null,
       "form_snippet": null
@@ -108,6 +109,10 @@
       "display_property": "dc:contributor",
       "display_snippet": "email.html",
       "display_email_name_field": "maintainer"
+    },
+    {
+      "field_name": "original_tags",
+      "label": "Original Tags"
     }
   ],
   "resource_fields": [
