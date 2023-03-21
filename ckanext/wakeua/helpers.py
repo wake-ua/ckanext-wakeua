@@ -3,6 +3,7 @@ import json
 import ckan.plugins.toolkit as toolkit
 from ckan.common import config
 import ckan.lib.helpers as h
+from ckan.common import _
 
 
 def wakeua_dataset_display_name(package_or_package_dict):
