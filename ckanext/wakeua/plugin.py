@@ -8,11 +8,13 @@ from ckan.lib.plugins import DefaultTranslation
 import ckanext.wakeua.blueprints as blueprints
 from ckanext.wakeua import validators as v
 from ckanext.wakeua import helpers as wh
+from ckanext.wakeua import action as wa
 
 
 class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITranslation, inherit=True)
+    plugins.implements(plugins.IActions, inherit=True)
     plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IValidators)
@@ -33,6 +35,10 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
             os.path.dirname(__file__), 'public'
         )
         add_public_path(asset_path, '/')
+
+    # IActions
+    def get_actions(self):
+        return {'wakeua_list_datastore_resources': wa.list_datastore_resources}
 
     # IPackageController
     # IOrganizationController IGroupController
