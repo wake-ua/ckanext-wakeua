@@ -113,6 +113,10 @@
     {
       "field_name": "original_tags",
       "label": "Original Tags"
+    },
+    {
+      "field_name": "location",
+      "label": "Location"
     }
   ],
   "resource_fields": [
