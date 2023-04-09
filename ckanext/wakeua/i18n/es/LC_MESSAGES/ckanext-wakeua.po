@@ -6,10 +6,11 @@
 #
 msgid ""
 msgstr ""
+
 "Project-Id-Version: ckanext-wakeua 0.0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-02-06 20:33+0100\n"
-"PO-Revision-Date: 2023-02-06 20:49+0100\n"
+"POT-Creation-Date: 2023-04-09 19:55+0200\n"
+"PO-Revision-Date: 2023-04-09 20:01+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
 "Language-Team: es <LL@li.org>\n"
@@ -19,10 +20,27 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.7.0\n"
 
-#: ckanext/wakeua/templates/home/legal-notice.html:3
-#: ckanext/wakeua/templates/home/legal-notice.html:6
+#: ckanext/wakeua/templates/footer.html:5
+#: ckanext/wakeua/templates/wakeua/legal_notice.html:3
+#: ckanext/wakeua/templates/wakeua/legal_notice.html:6
+#: ckanext/wakeua/templates/wakeua/legal_notice.html:12
 msgid "Legal Notice"
 msgstr "Aviso Legal"
+
+#: ckanext/wakeua/templates/group/edit.html:5
+msgid "Groups"
+msgstr "Categorías"
+
+msgid "Group"
+msgstr "Categoría"
+
+#: ckanext/wakeua/plugin.py:84
+msgid "Keywords"
+msgstr "Palabras Clave"
+
+#: ckanext/wakeua/plugin.py:85
+msgid "Location"
+msgstr "Territorio"
 
 #: ckanext/wakeua/templates/home/snippets/acknowledgements.html:3
 msgid "Acknowledgements"
@@ -45,5 +63,4 @@ msgstr "Localización"
 #: ckanext/wakeua/templates/package/snippets/package_basic_fields.html:4
 msgid "spatial location"
 msgstr "Localización Geográfica"
-
 

@@ -1,6 +1,6 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckan.common import config
+from ckan.common import config, _
 import os
 import json
 from ckan.lib.webassets_tools import add_public_path
@@ -61,15 +61,17 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
 
     def after_create(self, context, data_dict):
         for resource in data_dict.get("resources", []):
-            plugins.toolkit.get_action('xloader_submit')(context, {
-                'resource_id': resource["id"]
-            })
+            if resource["format"].upper()=="CSV":
+                plugins.toolkit.get_action('xloader_submit')(context, {
+                    'resource_id': resource["id"]
+                })
 
     def after_update(self, context, data_dict):
         for resource in data_dict.get("resources", []):
-            plugins.toolkit.get_action('xloader_submit')(context, {
-                'resource_id': resource["id"]
-            })
+            if resource["format"].upper()=="CSV":
+                plugins.toolkit.get_action('xloader_submit')(context, {
+                    'resource_id': resource["id"]
+                })
 
     def before_index(self, pkg_dict):
         extras_tag_string_schemaorg = pkg_dict.get('extras_tag_string_schemaorg', "")
@@ -79,11 +81,10 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
 
     # IFacets
     def dataset_facets(self, facets_dict, package_type):
-        facets_dict['schemaorg_tags'] = plugins.toolkit._('Vocabulary')
-        facets_dict['location'] = plugins.toolkit._('Location')
-        facets_order = ['location', 'groups', 'schemaorg_tags', 'tags', 'organization', 'res_format', 'license_id']
-        facets_order += [ key for key in facets_dict.keys() if key not in facets_order]
-        print("dataset_facets", facets_order)
+        facets_dict['schemaorg_tags'] = _('Keywords')
+        facets_dict['location'] = _('Location')
+        facets_order = ['location', 'groups', 'schemaorg_tags', 'organization', 'res_format', 'license_id']
+        # facets_order += [ key for key in facets_dict.keys() if key not in facets_order]
         sorted_dict = {facet: facets_dict[facet] for facet in facets_order}
         return sorted_dict
 

@@ -32,7 +32,7 @@
     },
     {
       "field_name": "tag_string_schemaorg",
-      "label": "Vocabulary",
+      "label": "Keywords",
       "validators": "ignore_missing",
       "classes": [
         "control-full"
@@ -47,6 +47,7 @@
     }
    ,{
       "field_name": "schemaorg_tags",
+      "label": "Keywords",
       "display_snippet": null,
       "form_snippet": null
     },

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-wakeua 0.0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-02-08 16:24+0100\n"
+"POT-Creation-Date: 2023-04-09 19:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,13 +17,48 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.7.0\n"
 
-#: ckanext/wakeua/templates/home/legal-notice.html:3
-#: ckanext/wakeua/templates/home/legal-notice.html:6
+#: ckanext/wakeua/helpers.py:31
+msgid "Unnamed resource"
+msgstr ""
+
+#: ckanext/wakeua/plugin.py:84
+msgid "Keywords"
+msgstr ""
+
+#: ckanext/wakeua/plugin.py:85
+msgid "Location"
+msgstr ""
+
+#: ckanext/wakeua/templates/footer.html:5
+#: ckanext/wakeua/templates/wakeua/legal_notice.html:3
+#: ckanext/wakeua/templates/wakeua/legal_notice.html:6
+#: ckanext/wakeua/templates/wakeua/legal_notice.html:12
 msgid "Legal Notice"
+msgstr ""
+
+#: ckanext/wakeua/templates/footer.html:10
+msgid "CKAN API"
+msgstr ""
+
+#: ckanext/wakeua/templates/group/edit.html:5
+msgid "Groups"
+msgstr ""
+
+#: ckanext/wakeua/templates/group/edit.html:9
+msgid "Manage"
+msgstr ""
+
+#: ckanext/wakeua/templates/group/snippets/info.html:7
+#: ckanext/wakeua/templates/snippets/organization.html:6
+msgid "Deleted"
 msgstr ""
 
 #: ckanext/wakeua/templates/home/snippets/acknowledgements.html:3
 msgid "Acknowledgements"
+msgstr ""
+
+#: ckanext/wakeua/templates/organization/edit_base.html:5
+msgid "Organizations"
 msgstr ""
 
 #: ckanext/wakeua/templates/package/read_base.html:14
@@ -42,5 +77,71 @@ msgstr ""
 
 #: ckanext/wakeua/templates/package/snippets/package_basic_fields.html:4
 msgid "spatial location"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:10
+msgid "Fullscreen"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:18
+msgid "Embed"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:32
+msgid "This resource view is not available at the moment."
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:34
+msgid "Click here for more information."
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:41
+msgid "Download resource"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:62
+msgid "Your browser does not support iframes."
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:72
+msgid "Embed resource view"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:75
+msgid ""
+"You can copy and paste the embed code into a CMS or blog software that "
+"supports raw HTML"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:78
+msgid "Width"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:81
+msgid "Height"
+msgstr ""
+
+#: ckanext/wakeua/templates/package/snippets/resource_view.html:84
+msgid "Code"
+msgstr ""
+
+#: ckanext/wakeua/templates/scheming/form_snippets/wakeua_multilingual_organization.html:25
+msgid "Visibility"
+msgstr ""
+
+#: ckanext/wakeua/templates/scheming/form_snippets/wakeua_multilingual_organization.html:28
+msgid "Private"
+msgstr ""
+
+#: ckanext/wakeua/templates/scheming/form_snippets/wakeua_multilingual_organization.html:28
+msgid "Public"
+msgstr ""
+
+#: ckanext/wakeua/templates/snippets/language_selector.html:3
+msgid "Language"
+msgstr ""
+
+#: ckanext/wakeua/templates/snippets/language_selector.html:11
+msgid "Go"
 msgstr ""
 
