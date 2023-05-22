@@ -21,7 +21,7 @@ msgstr ""
 
 #: ckanext/wakeua/templates/home/snippets/acknowledgements.html:3
 msgid "Acknowledgements"
-msgstr "Project co-financed by Generalitat Valenciana"
+msgstr "Work financed by the Ministry of Innovation, Universities, Science and Digital Society of the Generalitat Valenciana through the project"
 
 #: ckanext/wakeua/templates/package/read_base.html:14
 #: ckanext/wakeua/templates/wakeua/snippets/dataset_map_sidebar.html:17
