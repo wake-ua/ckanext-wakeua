@@ -1,5 +1,7 @@
 
 {% set intro = g.site_intro_text %}
+{% set current_lang = request.environ.CKAN_LANG %}
+{% set logo_img_url = '/wakeua-featured_{0}.png'.format(current_lang) %}
 
 <div class="module-content box" style="padding-top: 50px; padding-bottom: 50px;">
   <div>
@@ -19,7 +21,7 @@
     <section class="featured media-overlay hidden-xs">
       {% block home_image_content %}
         <a class="media-image" href="#">
-          <img class="img-responsive" src="{{ h.url_for_static('/wakeua-featured-420x220.png') }}" alt="Placeholder" width="420" height="220" />
+          <img class="img-responsive" src="{{ h.url_for_static(logo_img_url) }}" alt="Placeholder"/>
         </a>
       {% endblock %}
     </section>
