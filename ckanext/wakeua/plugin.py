@@ -38,7 +38,8 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
 
     # IActions
     def get_actions(self):
-        return {'wakeua_list_datastore_resources': wa.list_datastore_resources}
+        return {'wakeua_list_datastore_resources': wa.list_datastore_resources,
+                'wakeua_export_resource_data': wa.export_resource_data}
 
     # IPackageController
     # IOrganizationController IGroupController
