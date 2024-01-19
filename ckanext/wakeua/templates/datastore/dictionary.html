@@ -1,0 +1,7 @@
+{% ckan_extends %}
+
+{% block dictionary_form %}
+  {% for field in fields %}
+      {% snippet "wakeua/snippets/dictionary_form.html", field=field, position=loop.index %}
+  {% endfor %}
+{% endblock %}

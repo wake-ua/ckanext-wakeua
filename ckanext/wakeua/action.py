@@ -1,5 +1,6 @@
 from ckan.logic import side_effect_free, get_or_bust
 import ckanext.datastore.backend as datastore_backend
+from ckanext.datastore import helpers as datastore_helpers
 import ckan.plugins.toolkit as toolkit
 from ckanext.wakeua import logic as logic
 
@@ -33,7 +34,9 @@ def _export(context, data_dict):
     format = data_dict.get("format", "rdf_segittur")
 
     # TODO get datastore info - action
-    datastore_info = toolkit.get_action('datastore_info')(context, data_dict)
+    datastore_info = datastore_helpers.datastore_dictionary(resource_id)
+    print(datastore_info)
+    print('test')
 
     converted_resource = logic.convert_resource_data(format, resource_metadata, datastore_info)
 
