@@ -129,14 +129,30 @@ class RDFSegitturWriter(object):
         else:
             raise Exception("Not implemented: " + str(function))
 
+    def _append_tag(self,tag, record, ident):
+        if self.ontology_dict.get(tag):
+            field = self.ontology_dict.get(tag)['id']
+            function = self.ontology_dict.get(tag)['info'].get('function')
+            value = self._transform_value(record[field], function)
+            if isinstance(value, str):
+                value = '"' + value + '"'
+            rdf_value = tag + ' ' + str(value) + ';\n'
+            for i in range(0, ident):
+                rdf_value =  '    ' + rdf_value
+            return rdf_value
+        return None
+
     def _record_to_turtle(self, record):
         turtle = ""
+
+        identifier = None
 
         # identifier (MANDATORY)
         if self.ontology_dict.get("turismo:Hotel"):
             id_field = self.ontology_dict.get("turismo:Hotel")['id']
             function = self.ontology_dict.get("turismo:Hotel")['info'].get('function')
             value = str(record['_id']) + '_' + self._transform_value(record[id_field], function)
+            identifier = value
             turtle += "hotel:" + value + " a turismo:Hotel;\n"
         # elif with other ids
         else:
@@ -145,13 +161,9 @@ class RDFSegitturWriter(object):
 
         # hotel stars name
         for tag in ["turismo:stars", "turismo:name", "skos:prefLabel"]:
-            if self.ontology_dict.get(tag):
-                id_field = self.ontology_dict.get(tag)['id']
-                function = self.ontology_dict.get(tag)['info'].get('function')
-                value = self._transform_value(record[id_field], function)
-                if  isinstance(value, str):
-                    value = '"' + value + '"'
-                turtle += '    ' + tag + ' ' + str(value) + ';\n'
+            rdf_value = self._append_tag(tag, record, 1)
+            if rdf_value:
+                turtle += rdf_value
 
         return turtle
 
