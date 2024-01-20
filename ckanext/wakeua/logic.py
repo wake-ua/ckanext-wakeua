@@ -97,8 +97,6 @@ def rdf_segittur_writer(fields, resource_metadata, datastore_info, response):
             except Exception as e:
                 log.warn("WARN: could not parse JSON from ontology info on field data: " + str(field) + "\n" + str(e))
 
-    print(ontology_dict)
-
     yield RDFSegitturWriter(response.stream, [f[u'id'] for f in fields], ontology_dict, resource_metadata)
 
 
@@ -106,14 +104,64 @@ class RDFSegitturWriter(object):
 
     def __init__(self, response, columns, ontology_dict, resource_metadata):
         self.response = response
-        self.id_col = columns[0] == u'_id'
-        if self.id_col:
-            columns = columns[1:]
         self.columns = columns
         self.ontology_dict = ontology_dict
         self.resource_metadata = resource_metadata
 
+    def _record_to_dict(self, record):
+        record_dict = {}
+        index = 0
+        for column in self.columns:
+            record_dict[column] =  record[index]
+            index += 1
+        return record_dict
+
+    def _transform_value(self, value, function):
+        if not function:
+            if value:
+                return value.strip()
+            else:
+                return value
+        elif function == 'str_to_id':
+            return(value.upper().strip().replace(' ', '_'))
+        elif function == 'cast_to_int':
+            return (int(value.strip()))
+        else:
+            raise Exception("Not implemented: " + str(function))
+
+    def _record_to_turtle(self, record):
+        turtle = ""
+
+        # identifier (MANDATORY)
+        if self.ontology_dict.get("turismo:Hotel"):
+            id_field = self.ontology_dict.get("turismo:Hotel")['id']
+            function = self.ontology_dict.get("turismo:Hotel")['info'].get('function')
+            value = str(record['_id']) + '_' + self._transform_value(record[id_field], function)
+            turtle += "hotel:" + value + " a turismo:Hotel;\n"
+        # elif with other ids
+        else:
+            # fail
+            return None
+
+        # hotel stars name
+        for tag in ["turismo:stars", "turismo:name", "skos:prefLabel"]:
+            if self.ontology_dict.get(tag):
+                id_field = self.ontology_dict.get(tag)['id']
+                function = self.ontology_dict.get(tag)['info'].get('function')
+                value = self._transform_value(record[id_field], function)
+                if  isinstance(value, str):
+                    value = '"' + value + '"'
+                turtle += '    ' + tag + ' ' + str(value) + ';\n'
+
+        return turtle
+
     def write_records(self, records):
         for r in records:
-            self.response.write(json.dumps(r))
-            self.response.write(b'\n')
+            try:
+                record = self._record_to_dict(r)
+                turtle_text = self._record_to_turtle(record)
+                if turtle_text:
+                    self.response.write(turtle_text)
+                    self.response.write(b'\n')
+            except Exception as e:
+                log.warn("Error converting record id " + str(record.get('_id', '??')) + ", Exception: " + str(e))
