@@ -53,7 +53,7 @@ def wakeua_export_resource_data(resource_id, file_format):
 
     response = make_response()
     response.headers[u'content-type'] = (b'application/x-turtle; charset=utf-8')
-    response.headers[u'Content-Disposition'] = 'attachment; filename=' + resource_id + '_' + file_format + '.rdf'
+    response.headers[u'Content-Disposition'] = 'attachment; filename=' + resource_id + '_' + file_format + '.ttl'
 
     try:
         convert_resource_data(

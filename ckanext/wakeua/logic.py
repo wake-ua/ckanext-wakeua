@@ -3,16 +3,26 @@ from contextlib import contextmanager
 from ckan.plugins.toolkit import (abort, get_action)
 from ckanext.datastore import helpers as datastore_helpers
 
+from rdflib import Graph, Literal, RDF, URIRef, BNode
+from rdflib.namespace import Namespace, RDF, XSD, SKOS, RDFS
+
 from logging import getLogger
 
 log = getLogger(__name__)
 
 PAGINATE_BY = 32000
 
+# Create an RDF URI node to use as the subject for multiple triples
+TURISMO = Namespace("https://ontologia.segittur.es/turismo/modelo-v1-0-0.owl#")
+HOTEL = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/hotel#")
+ACCO_CAP = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/accommodationCapacity#")
+LOCATION = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/location#")
+
 
 def convert_resource_data(resource_id, file_format, context, response, offset, limit, sort, search_params):
 
     resource_metadata = get_action('resource_show')(context, {'id': resource_id})
+    package_metadata = get_action('package_show')(context, {'id': resource_metadata['package_id']})
 
     # get datastore info
     datastore_info = datastore_helpers.datastore_dictionary(resource_id)
@@ -48,7 +58,7 @@ def convert_resource_data(resource_id, file_format, context, response, offset, l
     else:
         abort(404, _(u'RDF format unknown'))
 
-    with rdf_writer(result[u'fields'], resource_metadata, datastore_info, response) as wr:
+    with rdf_writer(result[u'fields'], resource_metadata, package_metadata, datastore_info, response) as wr:
         while True:
             if limit is not None and limit <= 0:
                 break
@@ -69,17 +79,15 @@ def convert_resource_data(resource_id, file_format, context, response, offset, l
 
 
 @contextmanager
-def rdf_segittur_writer(fields, resource_metadata, datastore_info, response):
+def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_info, response):
+    # Create a Graph
+    g = Graph()
 
-    header = [  "@prefix skos: <http://www.w3.org/2008/05/skos#> .",
-                "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
-                "@prefix turismo: <https://ontologia.segittur.es/turismo/modelo-v1-0-0.owl#> .",
-                "@prefix hotel: <https://tdata.dlsi.ua.es/recurso/turismo/hotel#> .",
-                "@prefix tc: <https://tdata.dlsi.ua.es/recurso/turismo/temporaryClosure#> .",
-                "@prefix accoCap: <https://tdata.dlsi.ua.es/recurso/turismo/accommodationCapacity#> .",
-                "@prefix location: <https://tdata.dlsi.ua.es/recurso/turismo/location#> ."]
-
-    response.stream.write("\n".join(header) + "\n\n")
+    g.bind("skos", SKOS)
+    g.bind("turismo", TURISMO)
+    g.bind("hotel", HOTEL)
+    g.bind("acco_cap", ACCO_CAP)
+    g.bind("location", LOCATION)
 
     # build ontology based dictionary
     ontology_dict = {}
@@ -97,16 +105,18 @@ def rdf_segittur_writer(fields, resource_metadata, datastore_info, response):
             except Exception as e:
                 log.warn("WARN: could not parse JSON from ontology info on field data: " + str(field) + "\n" + str(e))
 
-    yield RDFSegitturWriter(response.stream, [f[u'id'] for f in fields], ontology_dict, resource_metadata)
+    yield RDFSegitturWriter(response.stream, [f[u'id'] for f in fields], ontology_dict, resource_metadata, package_metadata, g)
 
 
 class RDFSegitturWriter(object):
 
-    def __init__(self, response, columns, ontology_dict, resource_metadata):
-        self.response = response
+    def __init__(self, stream, columns, ontology_dict, resource_metadata, package_metadata, graph):
+        self.stream = stream
         self.columns = columns
         self.ontology_dict = ontology_dict
         self.resource_metadata = resource_metadata
+        self.package_metadata = package_metadata
+        self.graph = graph
 
     def _record_to_dict(self, record):
         record_dict = {}
@@ -125,27 +135,30 @@ class RDFSegitturWriter(object):
         elif function == 'str_to_id':
             return(value.upper().strip().replace(' ', '_'))
         elif function == 'cast_to_int':
-            return (int(value.strip()))
+            try:
+                transformed_value = int(value.strip())
+                return transformed_value
+            except ValueError as v:
+                log.warn('Could not convert value to int: "' + str(value.strip()) + '" Exception: ' + str (v))
+                return None
         else:
             raise Exception("Not implemented: " + str(function))
 
-    def _append_tag(self,tag, record, ident):
+    def _get_tag(self, tag, record):
         if self.ontology_dict.get(tag):
             field = self.ontology_dict.get(tag)['id']
             function = self.ontology_dict.get(tag)['info'].get('function')
             value = self._transform_value(record[field], function)
-            if isinstance(value, str):
-                value = '"' + value + '"'
-            rdf_value = tag + ' ' + str(value) + ';\n'
-            for i in range(0, ident):
-                rdf_value =  '    ' + rdf_value
-            return rdf_value
+            if value:
+                return value
         return None
 
-    def _record_to_turtle(self, record):
+    def _add_record_to_graph(self, record):
+
         turtle = ""
 
         identifier = None
+        hotel = None
 
         # identifier (MANDATORY)
         if self.ontology_dict.get("turismo:Hotel"):
@@ -154,26 +167,77 @@ class RDFSegitturWriter(object):
             value = str(record['_id']) + '_' + self._transform_value(record[id_field], function)
             identifier = value
             turtle += "hotel:" + value + " a turismo:Hotel;\n"
+
+            # generate hotel:6_CV_H00108_A a turismo:Hotel;
+            hotel = URIRef(HOTEL[identifier])
+            self.graph.add((hotel, RDF.type, TURISMO.Hotel))
+
         # elif with other ids
         else:
             # fail
             return None
 
         # hotel stars name
-        for tag in ["turismo:stars", "turismo:name", "skos:prefLabel"]:
-            rdf_value = self._append_tag(tag, record, 1)
-            if rdf_value:
-                turtle += rdf_value
+        ref_base_predicates =  {"turismo:stars": TURISMO.stars,
+                                "turismo:name": TURISMO.name,
+                                "skos:prefLabel": SKOS.prefLabel}
 
-        return turtle
+        for tag, rdf_predicate in ref_base_predicates.items():
+            rdf_value = self._get_tag(tag, record)
+            if rdf_value:
+                self.graph.add((hotel, rdf_predicate, Literal(rdf_value)))
+
+        # accomodation capacity
+        max_capacity = self._get_tag("turismo:maximumCapacity", record)
+        num_rooms = self._get_tag("turismo:numberOfRooms", record)
+        if max_capacity or num_rooms:
+            accoCap = URIRef(ACCO_CAP[identifier])
+            self.graph.add((hotel, TURISMO.accommodationCapacity, accoCap))
+            self.graph.add((accoCap, RDF.type, TURISMO.AccommodationCapacity))
+            if max_capacity:
+                self.graph.add((accoCap, TURISMO.maximumCapacity, Literal(max_capacity)))
+            if num_rooms:
+                self.graph.add((accoCap, TURISMO.numberOfRooms, Literal(num_rooms)))
+
+        # location
+        # TODO turismo:province <http://datos.gob.es/recurso/sector-publico/territorio/Provincia/Alicante>;
+        #  #OJO, range es xsd:String
+
+        location = URIRef(LOCATION[identifier])
+        self.graph.add((hotel, TURISMO.Location, location))
+        self.graph.add((location, RDF.type, TURISMO.Location))
+        self.graph.add((location, TURISMO.country, Literal("España")))
+
+        aut_community = None
+        org_ac_dict = {c: "Comunitat Valenciana" for c in ['gva', 'alcoi', 'torrent', 'sagunto', 'valencia', 'dipcas']}
+        if self.package_metadata['organization']['name'] in org_ac_dict.keys():
+            aut_community = org_ac_dict[self.package_metadata['organization']['name']]
+        if aut_community:
+            self.graph.add((location, TURISMO.autonomousCommunity, Literal(aut_community)))
+
+        ref_location_predicates = {"turismo:city": TURISMO.city,
+                                   "turismo:county": TURISMO.county,
+                                   "turismo:postalCode": TURISMO.postalCode,
+                                   "turismo:streetAddress": TURISMO.streetAddress,
+                                   "turismo:province": TURISMO.province,
+                                   }
+
+        for tag, rdf_predicate in ref_location_predicates.items():
+            rdf_value = self._get_tag(tag, record)
+            if rdf_value:
+                self.graph.add((location, rdf_predicate, Literal(rdf_value)))
+
+        return
 
     def write_records(self, records):
+        # TODO Write record-by-record to RDF (write header an footer outside of this function)
+        count = 0
         for r in records:
             try:
                 record = self._record_to_dict(r)
-                turtle_text = self._record_to_turtle(record)
-                if turtle_text:
-                    self.response.write(turtle_text)
-                    self.response.write(b'\n')
+                self._add_record_to_graph(record)
+                count += 1
             except Exception as e:
-                log.warn("Error converting record id " + str(record.get('_id', '??')) + ", Exception: " + str(e))
+                log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
+                         + ", Exception: " + str(e))
+        self.stream.write(self.graph.serialize(format='ttl'))
