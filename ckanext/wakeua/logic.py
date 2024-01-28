@@ -149,13 +149,11 @@ class RDFSegitturWriter(object):
             field = self.ontology_dict.get(tag)['id']
             function = self.ontology_dict.get(tag)['info'].get('function')
             value = self._transform_value(record[field], function)
-            if value:
+            if value is not None:
                 return value
         return None
 
     def _add_record_to_graph(self, record):
-
-        turtle = ""
 
         identifier = None
         hotel = None
@@ -166,7 +164,6 @@ class RDFSegitturWriter(object):
             function = self.ontology_dict.get("turismo:Hotel")['info'].get('function')
             value = str(record['_id']) + '_' + self._transform_value(record[id_field], function)
             identifier = value
-            turtle += "hotel:" + value + " a turismo:Hotel;\n"
 
             # generate hotel:6_CV_H00108_A a turismo:Hotel;
             hotel = URIRef(HOTEL[identifier])
@@ -184,7 +181,7 @@ class RDFSegitturWriter(object):
 
         for tag, rdf_predicate in ref_base_predicates.items():
             rdf_value = self._get_tag(tag, record)
-            if rdf_value:
+            if rdf_value is not None:
                 self.graph.add((hotel, rdf_predicate, Literal(rdf_value)))
 
         # accomodation capacity
@@ -204,7 +201,7 @@ class RDFSegitturWriter(object):
         #  #OJO, range es xsd:String
 
         location = URIRef(LOCATION[identifier])
-        self.graph.add((hotel, TURISMO.Location, location))
+        self.graph.add((hotel, TURISMO.hasLocation, location))
         self.graph.add((location, RDF.type, TURISMO.Location))
         self.graph.add((location, TURISMO.country, Literal("España")))
 
@@ -237,6 +234,7 @@ class RDFSegitturWriter(object):
                 record = self._record_to_dict(r)
                 self._add_record_to_graph(record)
                 count += 1
+
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
