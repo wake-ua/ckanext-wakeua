@@ -247,5 +247,4 @@ class RDFSegitturWriter(object):
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
-            break
         self.stream.write(self.graph.serialize(format='ttl'))
