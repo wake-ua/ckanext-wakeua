@@ -141,6 +141,11 @@ class RDFSegitturWriter(object):
             except ValueError as v:
                 log.warn('Could not convert value to int: "' + str(value.strip()) + '" Exception: ' + str (v))
                 return None
+        elif function == 'match_hotel_speciality':
+            value_fix = ' '.join([t for t in value.strip().lower().split(' ') if t])
+            if value_fix in ['rural', 'casa rural']:
+                return TURISMO.ruralHotel
+            return None
         else:
             raise Exception("Not implemented: " + str(function))
 
@@ -177,12 +182,16 @@ class RDFSegitturWriter(object):
         # hotel stars name
         ref_base_predicates =  {"turismo:stars": TURISMO.stars,
                                 "turismo:name": TURISMO.name,
-                                "skos:prefLabel": SKOS.prefLabel}
+                                "skos:prefLabel": SKOS.prefLabel,
+                                "turismo:hotelSpecialty": TURISMO.hotelSpecialty}
 
         for tag, rdf_predicate in ref_base_predicates.items():
             rdf_value = self._get_tag(tag, record)
             if rdf_value is not None:
-                self.graph.add((hotel, rdf_predicate, Literal(rdf_value)))
+                if type(rdf_value) in [str, int, float, bool]:
+                    self.graph.add((hotel, rdf_predicate, Literal(rdf_value)))
+                else:
+                    self.graph.add((hotel, rdf_predicate, rdf_value))
 
         # accomodation capacity
         max_capacity = self._get_tag("turismo:maximumCapacity", record)
@@ -238,4 +247,5 @@ class RDFSegitturWriter(object):
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
+            break
         self.stream.write(self.graph.serialize(format='ttl'))
