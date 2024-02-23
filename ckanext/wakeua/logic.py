@@ -6,6 +6,9 @@ from ckanext.datastore import helpers as datastore_helpers
 from rdflib import Graph, Literal, RDF, URIRef, BNode
 from rdflib.namespace import Namespace, RDF, XSD, SKOS, RDFS
 
+from unidecode import unidecode
+import re
+
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -17,6 +20,7 @@ TURISMO = Namespace("https://ontologia.segittur.es/turismo/modelo-v1-0-0.owl#")
 HOTEL = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/hotel#")
 ACCO_CAP = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/accommodationCapacity#")
 LOCATION = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/location#")
+TELECOMS = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/telecoms#")
 
 
 def convert_resource_data(resource_id, file_format, context, response, offset, limit, sort, search_params):
@@ -88,6 +92,7 @@ def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_i
     g.bind("hotel", HOTEL)
     g.bind("acco_cap", ACCO_CAP)
     g.bind("location", LOCATION)
+    g.bind("telecoms", TELECOMS)
 
     # build ontology based dictionary
     ontology_dict = {}
@@ -133,7 +138,8 @@ class RDFSegitturWriter(object):
             else:
                 return value
         elif function == 'str_to_id':
-            return(value.upper().strip().replace(' ', '_'))
+            norm_value = re.sub('[^A-Za-z0-9_\-]+', '', unidecode(value.strip().replace(' ', '_')))
+            return(norm_value.upper())
         elif function == 'cast_to_int':
             try:
                 transformed_value = int(value.strip())
@@ -158,21 +164,21 @@ class RDFSegitturWriter(object):
                 return value
         return None
 
-    def _add_record_to_graph(self, record):
+    def _add_record_to_graph(self, record, count):
 
         identifier = None
-        hotel = None
+        entity = None
 
         # identifier (MANDATORY)
         if self.ontology_dict.get("turismo:Hotel"):
             id_field = self.ontology_dict.get("turismo:Hotel")['id']
             function = self.ontology_dict.get("turismo:Hotel")['info'].get('function')
-            value = str(record['_id']) + '_' + self._transform_value(record[id_field], function)
+            value = str(count + 1) + '_' + self._transform_value(record[id_field], function)
             identifier = value
 
             # generate hotel:6_CV_H00108_A a turismo:Hotel;
-            hotel = URIRef(HOTEL[identifier])
-            self.graph.add((hotel, RDF.type, TURISMO.Hotel))
+            entity = URIRef(HOTEL[identifier])
+            self.graph.add((entity, RDF.type, TURISMO.Hotel))
 
         # elif with other ids
         else:
@@ -189,16 +195,16 @@ class RDFSegitturWriter(object):
             rdf_value = self._get_tag(tag, record)
             if rdf_value is not None:
                 if type(rdf_value) in [str, int, float, bool]:
-                    self.graph.add((hotel, rdf_predicate, Literal(rdf_value)))
+                    self.graph.add((entity, rdf_predicate, Literal(rdf_value)))
                 else:
-                    self.graph.add((hotel, rdf_predicate, rdf_value))
+                    self.graph.add((entity, rdf_predicate, rdf_value))
 
         # accomodation capacity
         max_capacity = self._get_tag("turismo:maximumCapacity", record)
         num_rooms = self._get_tag("turismo:numberOfRooms", record)
         if max_capacity or num_rooms:
             accoCap = URIRef(ACCO_CAP[identifier])
-            self.graph.add((hotel, TURISMO.accommodationCapacity, accoCap))
+            self.graph.add((entity, TURISMO.accommodationCapacity, accoCap))
             self.graph.add((accoCap, RDF.type, TURISMO.AccommodationCapacity))
             if max_capacity:
                 self.graph.add((accoCap, TURISMO.maximumCapacity, Literal(max_capacity)))
@@ -208,9 +214,8 @@ class RDFSegitturWriter(object):
         # location
         # TODO turismo:province <http://datos.gob.es/recurso/sector-publico/territorio/Provincia/Alicante>;
         #  #OJO, range es xsd:String
-
         location = URIRef(LOCATION[identifier])
-        self.graph.add((hotel, TURISMO.hasLocation, location))
+        self.graph.add((entity, TURISMO.hasLocation, location))
         self.graph.add((location, RDF.type, TURISMO.Location))
         self.graph.add((location, TURISMO.country, Literal("España")))
 
@@ -233,6 +238,26 @@ class RDFSegitturWriter(object):
             if rdf_value:
                 self.graph.add((location, rdf_predicate, Literal(rdf_value)))
 
+        # Telecoms
+        ref_telecoms_predicates = {
+            "turismo:email": TURISMO.email,
+            "turismo:url": TURISMO.url,
+            "turismo:telephone": TURISMO.telephone,
+        }
+        telecom_rdf_values = []
+        for tag, rdf_predicate in ref_telecoms_predicates.items():
+            rdf_value = self._get_tag(tag, record)
+            if rdf_value:
+                telecom_rdf_values += [(rdf_value, rdf_predicate)]
+
+        if telecom_rdf_values:
+            telecoms = URIRef(TELECOMS[identifier])
+            self.graph.add((entity, TURISMO.hasTelecoms, telecoms))
+            self.graph.add((telecoms, RDF.type, TURISMO.Telecoms))
+
+            for rdf_value, rdf_predicate in telecom_rdf_values:
+                self.graph.add((telecoms, rdf_predicate, Literal(rdf_value)))
+
         return
 
     def write_records(self, records):
@@ -241,9 +266,9 @@ class RDFSegitturWriter(object):
         for r in records:
             try:
                 record = self._record_to_dict(r)
-                self._add_record_to_graph(record)
+                self._add_record_to_graph(record, count)
                 count += 1
-
+                # break
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
