@@ -16,12 +16,21 @@ log = getLogger(__name__)
 PAGINATE_BY = 32000
 
 # Create an RDF URI node to use as the subject for multiple triples
+BASEURI = "https://tdata.dlsi.ua.es/recurso/turismo/"
 TURISMO = Namespace("https://ontologia.segittur.es/turismo/modelo-v1-0-0.owl#")
-HOTEL = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/hotel#")
 ACCO_CAP = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/accommodationCapacity#")
 LOCATION = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/location#")
 TELECOMS = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/telecoms#")
 
+
+def get_id(ontology_dict):
+    id_predicate = None
+    prefix = None
+    for k, v in ontology_dict.items():
+        if v['info'].get('function') == "str_to_id":
+            id_predicate = k
+            prefix = k.split(":")[1].lower().strip()
+    return id_predicate, prefix
 
 def convert_resource_data(resource_id, file_format, context, response, offset, limit, sort, search_params):
 
@@ -89,7 +98,6 @@ def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_i
 
     g.bind("skos", SKOS)
     g.bind("turismo", TURISMO)
-    g.bind("hotel", HOTEL)
     g.bind("acco_cap", ACCO_CAP)
     g.bind("location", LOCATION)
     g.bind("telecoms", TELECOMS)
@@ -109,6 +117,12 @@ def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_i
 
             except Exception as e:
                 log.warn("WARN: could not parse JSON from ontology info on field data: " + str(field) + "\n" + str(e))
+
+    id_predicate, prefix = get_id(ontology_dict)
+    if id_predicate:
+        namespace_uri = BASEURI + prefix + '#'
+        namespace_id = Namespace(namespace_uri)
+        g.bind(prefix, namespace_id)
 
     yield RDFSegitturWriter(response.stream, [f[u'id'] for f in fields], ontology_dict, resource_metadata, package_metadata, g)
 
@@ -145,13 +159,38 @@ class RDFSegitturWriter(object):
                 transformed_value = int(value.strip())
                 return transformed_value
             except ValueError as v:
-                log.warn('Could not convert value to int: "' + str(value.strip()) + '" Exception: ' + str (v))
+                log.warn('Could not convert value to int (retrying float): "' + str(value.strip()) + '" Exception: ' + str (v))
+                try:
+                    transformed_value = float(value.strip())
+                    return round(transformed_value)
+                except ValueError as v:
+                    log.warn('Could not convert value to int or float: "' + str(value.strip()) + '" Exception: ' + str(v))
+                    return None
+        elif function == 'stars_to_int':
+            try:
+                text_value = (value.upper().split(' ESTRELLA')[0].strip())
+                stars_count = ['UNA', 'DOS', 'TRES', 'CUATRO', 'CINCO']
+                stars_map_dict = {k: stars_count.index(k)+1 for k in stars_count}
+                return stars_map_dict[text_value]
+            except ValueError as v:
+                log.warn('Could not convert value to int: "' + str(value.strip()) + '" Exception: ' + str(v))
+                return None
+        elif function == 'str_to_coordinate_1' or function == 'str_to_coordinate_2':
+            try:
+                values = [float(v.strip()) for v in value.split(',')]
+                if function == 'str_to_coordinate_1':
+                    return values[0]
+                else:
+                    return values[1]
+            except ValueError as v:
+                log.warn('Could not convert value to float: "' + str(value.strip()) + '" Exception: ' + str(v))
                 return None
         elif function == 'match_hotel_speciality':
             value_fix = ' '.join([t for t in value.strip().lower().split(' ') if t])
             if value_fix in ['rural', 'casa rural']:
                 return TURISMO.ruralHotel
             return None
+
         else:
             raise Exception("Not implemented: " + str(function))
 
@@ -170,19 +209,23 @@ class RDFSegitturWriter(object):
         entity = None
 
         # identifier (MANDATORY)
-        if self.ontology_dict.get("turismo:Hotel"):
-            id_field = self.ontology_dict.get("turismo:Hotel")['id']
-            function = self.ontology_dict.get("turismo:Hotel")['info'].get('function')
+        id_predicate, prefix = get_id(self.ontology_dict)
+        if id_predicate:
+            id_field = self.ontology_dict.get(id_predicate)['id']
+            function = self.ontology_dict.get(id_predicate)['info'].get('function')
             value = str(count + 1) + '_' + self._transform_value(record[id_field], function)
             identifier = value
 
             # generate hotel:6_CV_H00108_A a turismo:Hotel;
-            entity = URIRef(HOTEL[identifier])
-            self.graph.add((entity, RDF.type, TURISMO.Hotel))
+            namespace_uri = BASEURI + prefix + '#'
+            namespace_id = Namespace(namespace_uri)
+            entity = URIRef(namespace_id[identifier])
+            self.graph.add((entity, RDF.type, TURISMO[id_predicate.split(":")[1].strip()]))
 
         # elif with other ids
         else:
             # fail
+            log.warn("No ontology id defined")
             return None
 
         # hotel stars name
@@ -231,6 +274,8 @@ class RDFSegitturWriter(object):
                                    "turismo:postalCode": TURISMO.postalCode,
                                    "turismo:streetAddress": TURISMO.streetAddress,
                                    "turismo:province": TURISMO.province,
+                                   "turismo:latitude": TURISMO.latitude,
+                                   "turismo:longitude": TURISMO.longitude
                                    }
 
         for tag, rdf_predicate in ref_location_predicates.items():
@@ -268,7 +313,8 @@ class RDFSegitturWriter(object):
                 record = self._record_to_dict(r)
                 self._add_record_to_graph(record, count)
                 count += 1
-                # break
+                # if count > 2:
+                #     break
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
