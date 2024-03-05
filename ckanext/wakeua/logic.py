@@ -172,9 +172,14 @@ class RDFSegitturWriter(object):
                 stars_count = ['UNA', 'DOS', 'TRES', 'CUATRO', 'CINCO']
                 stars_map_dict = {k: stars_count.index(k)+1 for k in stars_count}
                 return stars_map_dict[text_value]
-            except ValueError as v:
-                log.warn('Could not convert value to int: "' + str(value.strip()) + '" Exception: ' + str(v))
-                return None
+            except Exception as v:
+                try:
+                    text_value = value.strip().lower().replace('e', '')
+                    transformed_value = int(text_value)
+                    return transformed_value
+                except ValueError as v:
+                    log.warn('Could not convert stars to int: "' + str(value.strip()) + '" Exception: ' + str(v))
+                    return None
         elif function == 'str_to_coordinate_1' or function == 'str_to_coordinate_2':
             try:
                 values = [float(v.strip()) for v in value.split(',')]
@@ -264,8 +269,9 @@ class RDFSegitturWriter(object):
 
         aut_community = None
         org_ac_dict = {c: "Comunitat Valenciana" for c in ['gva', 'alcoi', 'torrent', 'sagunto', 'valencia', 'dipcas']}
-        if self.package_metadata['organization']['name'] in org_ac_dict.keys():
-            aut_community = org_ac_dict[self.package_metadata['organization']['name']]
+        organization = self.package_metadata['organization']['name']
+        if organization in org_ac_dict.keys():
+            aut_community = org_ac_dict[organization]
         if aut_community:
             self.graph.add((location, TURISMO.autonomousCommunity, Literal(aut_community)))
 
@@ -282,6 +288,21 @@ class RDFSegitturWriter(object):
             rdf_value = self._get_tag(tag, record)
             if rdf_value:
                 self.graph.add((location, rdf_predicate, Literal(rdf_value)))
+            else:
+                # override from dataset metadata
+                if tag == "turismo:province":
+                    province_dict = {'alcoi': 'Alicante', 'torrent': 'Valencia', 'sagunto': 'Valencia',
+                                   'valencia': 'Valencia', 'dipcas': 'Castellon'}
+                    if organization in province_dict.keys():
+                        province = province_dict[organization]
+                        if province:
+                            self.graph.add((location, TURISMO.province, Literal(province)))
+                elif tag == "turismo:city":
+                    city_dict = {'alcoi': 'Alcoi', 'torrent': 'Torrent', 'sagunto': 'Sagunto'}
+                    if organization in city_dict.keys():
+                        city = city_dict[organization]
+                        if province:
+                            self.graph.add((location, TURISMO.province, Literal(city)))
 
         # Telecoms
         ref_telecoms_predicates = {
