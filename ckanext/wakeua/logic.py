@@ -14,23 +14,24 @@ from logging import getLogger
 log = getLogger(__name__)
 
 PAGINATE_BY = 32000
+PREDICATOR_SEP  = '/'
 
 # Create an RDF URI node to use as the subject for multiple triples
 BASEURI = "https://tdata.dlsi.ua.es/recurso/turismo/"
-TURISMO = Namespace("https://ontologia.segittur.es/turismo/modelo-v1-0-0.owl#")
-ACCO_CAP = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/accommodationCapacity#")
-LOCATION = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/location#")
-TELECOMS = Namespace("https://tdata.dlsi.ua.es/recurso/turismo/telecoms#")
-
 
 def get_id(ontology_dict):
     id_predicate = None
     prefix = None
+    ontology = None
+    id_prefix = None
     for k, v in ontology_dict.items():
         if v['info'].get('function') == "str_to_id":
-            id_predicate = k
-            prefix = k.split(":")[1].lower().strip()
-    return id_predicate, prefix
+            id_predicate = k[1]
+            prefix = v['info'].get('prefix').lower().strip()
+            ontology = k[0]
+            id_prefix = id_predicate.split(':')[1].lower().strip()
+
+    return id_prefix, id_predicate, prefix, ontology
 
 def convert_resource_data(resource_id, file_format, context, response, offset, limit, sort, search_params):
 
@@ -87,7 +88,6 @@ def convert_resource_data(resource_id, file_format, context, response, offset, l
                 limit -= paginate_by
                 if limit <= 0:
                     break
-
             result = result_page(offset, limit)
 
 
@@ -95,12 +95,6 @@ def convert_resource_data(resource_id, file_format, context, response, offset, l
 def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_info, response):
     # Create a Graph
     g = Graph()
-
-    g.bind("skos", SKOS)
-    g.bind("turismo", TURISMO)
-    g.bind("acco_cap", ACCO_CAP)
-    g.bind("location", LOCATION)
-    g.bind("telecoms", TELECOMS)
 
     # build ontology based dictionary
     ontology_dict = {}
@@ -110,19 +104,32 @@ def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_i
                 ontology_infos = json.loads(field.get('info', {}).get('ontology', '').replace("'", '"'))
                 field_name = field['id']
                 for info in ontology_infos:
-                    ontology  = info.get('ontology')
-                    predicate  = info.get('predicate')
-                    if ontology=='segittur_rdf' and predicate:
-                        ontology_dict[predicate] = {'id': field_name, 'info': info}
+                    ontology = info.get('ontology')
+                    predicate = info.get('predicate')
+                    prefix = info.get('predicate')
+                    if ontology and prefix and predicate:
+                        ontology_dict[(ontology, predicate)] = {'id': field_name, 'info': info}
 
             except Exception as e:
                 log.warn("WARN: could not parse JSON from ontology info on field data: " + str(field) + "\n" + str(e))
 
-    id_predicate, prefix = get_id(ontology_dict)
-    if id_predicate:
-        namespace_uri = BASEURI + prefix + '#'
-        namespace_id = Namespace(namespace_uri)
-        g.bind(prefix, namespace_id)
+    prefixes = []
+    for key, item in ontology_dict.items():
+        prefix = item['info'].get('prefix')
+        predicate = item['info'].get('predicate')
+        if  prefix and predicate:
+            if len(predicate.split(PREDICATOR_SEP)) > 1:
+                namespace_uri = BASEURI + prefix + '#'
+            else:
+                namespace_uri = item['info']['ontology']
+            namespace = Namespace(namespace_uri)
+            prefixes += [(prefix, Namespace(namespace_uri))]
+
+    id_prefix, id_predicate, prefix, ontology = get_id(ontology_dict)
+    prefixes += [(id_prefix, Namespace(BASEURI + id_prefix + '#'))]
+
+    for prefix, namespace in set(prefixes):
+        g.bind(prefix, namespace)
 
     yield RDFSegitturWriter(response.stream, [f[u'id'] for f in fields], ontology_dict, resource_metadata, package_metadata, g)
 
@@ -136,6 +143,7 @@ class RDFSegitturWriter(object):
         self.resource_metadata = resource_metadata
         self.package_metadata = package_metadata
         self.graph = graph
+        self.namespaces_dict = {p: Namespace(n) for p,n in self.graph.namespaces()}
 
     def _record_to_dict(self, record):
         record_dict = {}
@@ -193,16 +201,16 @@ class RDFSegitturWriter(object):
         elif function == 'match_hotel_speciality':
             value_fix = ' '.join([t for t in value.strip().lower().split(' ') if t])
             if value_fix in ['rural', 'casa rural']:
-                return TURISMO.ruralHotel
+                return self.namespaces_dict['turismo']['ruralHotel']
             return None
-
         else:
             raise Exception("Not implemented: " + str(function))
 
-    def _get_tag(self, tag, record):
-        if self.ontology_dict.get(tag):
-            field = self.ontology_dict.get(tag)['id']
-            function = self.ontology_dict.get(tag)['info'].get('function')
+    def _get_tag(self, ontology, tag, record):
+        key = (ontology, tag)
+        if self.ontology_dict.get(key):
+            field = self.ontology_dict.get(key)['id']
+            function = self.ontology_dict.get(key)['info'].get('function')
             value = self._transform_value(record[field], function)
             if value is not None:
                 return value
@@ -214,116 +222,82 @@ class RDFSegitturWriter(object):
         entity = None
 
         # identifier (MANDATORY)
-        id_predicate, prefix = get_id(self.ontology_dict)
+        entity_name, id_predicate, id_prefix, id_ontology = get_id(self.ontology_dict)
         if id_predicate:
-            id_field = self.ontology_dict.get(id_predicate)['id']
-            function = self.ontology_dict.get(id_predicate)['info'].get('function')
-            value = str(count + 1) + '_' + self._transform_value(record[id_field], function)
-            identifier = value
+            id_field = self.ontology_dict.get((id_ontology, id_predicate))['id']
+            function = self.ontology_dict.get((id_ontology, id_predicate))['info'].get('function')
+            identifier = str(count + 1) + '_' + self._transform_value(record[id_field], function)
 
             # generate hotel:6_CV_H00108_A a turismo:Hotel;
-            namespace_uri = BASEURI + prefix + '#'
-            namespace_id = Namespace(namespace_uri)
+            namespace_id = self.namespaces_dict[entity_name]
+            namespace_parent = self.namespaces_dict[id_prefix]
             entity = URIRef(namespace_id[identifier])
-            self.graph.add((entity, RDF.type, TURISMO[id_predicate.split(":")[1].strip()]))
+            self.graph.add((entity, RDF.type, namespace_parent[id_predicate.split(":")[1].strip()]))
 
-        # elif with other ids
         else:
             # fail
-            log.warn("No ontology id defined")
+            log.warn("No ontology id predicate defined")
             return None
 
-        # hotel stars name
-        ref_base_predicates =  {"turismo:stars": TURISMO.stars,
-                                "turismo:name": TURISMO.name,
-                                "skos:prefLabel": SKOS.prefLabel,
-                                "turismo:hotelSpecialty": TURISMO.hotelSpecialty}
-
-        for tag, rdf_predicate in ref_base_predicates.items():
-            rdf_value = self._get_tag(tag, record)
-            if rdf_value is not None:
-                if type(rdf_value) in [str, int, float, bool]:
-                    self.graph.add((entity, rdf_predicate, Literal(rdf_value)))
-                else:
-                    self.graph.add((entity, rdf_predicate, rdf_value))
-
-        # accomodation capacity
-        max_capacity = self._get_tag("turismo:maximumCapacity", record)
-        num_rooms = self._get_tag("turismo:numberOfRooms", record)
-        if max_capacity or num_rooms:
-            accoCap = URIRef(ACCO_CAP[identifier])
-            self.graph.add((entity, TURISMO.accommodationCapacity, accoCap))
-            self.graph.add((accoCap, RDF.type, TURISMO.AccommodationCapacity))
-            if max_capacity:
-                self.graph.add((accoCap, TURISMO.maximumCapacity, Literal(max_capacity)))
-            if num_rooms:
-                self.graph.add((accoCap, TURISMO.numberOfRooms, Literal(num_rooms)))
-
-        # location
-        # TODO turismo:province <http://datos.gob.es/recurso/sector-publico/territorio/Provincia/Alicante>;
-        #  #OJO, range es xsd:String
-        location = URIRef(LOCATION[identifier])
-        self.graph.add((entity, TURISMO.hasLocation, location))
-        self.graph.add((location, RDF.type, TURISMO.Location))
-        self.graph.add((location, TURISMO.country, Literal("España")))
-
+        # default add location
+        location = URIRef(self.namespaces_dict['location'][identifier])
+        self.graph.add((entity, self.namespaces_dict['turismo']['hasLocation'], location))
+        self.graph.add((location, RDF.type, self.namespaces_dict['turismo']['Location']))
+        self.graph.add((location, self.namespaces_dict['turismo']['country'], Literal("España")))
         aut_community = None
         org_ac_dict = {c: "Comunitat Valenciana" for c in ['gva', 'alcoi', 'torrent', 'sagunto', 'valencia', 'dipcas']}
         organization = self.package_metadata['organization']['name']
         if organization in org_ac_dict.keys():
             aut_community = org_ac_dict[organization]
         if aut_community:
-            self.graph.add((location, TURISMO.autonomousCommunity, Literal(aut_community)))
+            self.graph.add((location, self.namespaces_dict['turismo']['autonomousCommunity'], Literal(aut_community)))
+        province_dict = {'alcoi': 'Alicante', 'torrent': 'Valencia', 'sagunto': 'Valencia',
+                         'valencia': 'Valencia', 'dipcas': 'Castellon'}
+        if organization in province_dict.keys():
+            province = province_dict[organization]
+            if province:
+                self.graph.add((location, self.namespaces_dict['turismo']['province'], Literal(province)))
+        city_dict = {'alcoi': 'Alcoi', 'torrent': 'Torrent', 'sagunto': 'Sagunto'}
+        if organization in city_dict.keys():
+            city = city_dict[organization]
+            if province:
+                self.graph.add((location, self.namespaces_dict['turismo']['city'], Literal(city)))
 
-        ref_location_predicates = {"turismo:city": TURISMO.city,
-                                   "turismo:county": TURISMO.county,
-                                   "turismo:postalCode": TURISMO.postalCode,
-                                   "turismo:streetAddress": TURISMO.streetAddress,
-                                   "turismo:province": TURISMO.province,
-                                   "turismo:latitude": TURISMO.latitude,
-                                   "turismo:longitude": TURISMO.longitude
-                                   }
+        # get other rfd predicates
+        for k, v in self.ontology_dict.items():
+            ontology, predicate = k
+            if ontology != id_ontology or predicate != id_predicate:
+                #TODO MAke this work for arbitrary parent levels
+                if len(predicate.split(PREDICATOR_SEP)) == 3:
+                    predicate_list = predicate.split('/')
+                    parent_name = v['info']['prefix']
+                    verb = predicate_list[0].split(':')
+                    parent = predicate_list[1].split(':')
+                    parent_entity = URIRef(self.namespaces_dict[parent_name][identifier])
+                    child_predicate = predicate_list[2]
+                elif len(predicate.split(PREDICATOR_SEP)) == 1:
+                    parent = None
+                    parent_entity = entity
+                    child_predicate = predicate
+                else:
+                    log.warn("Possibly wrong predicate " + predicate)
+                    continue
 
-        for tag, rdf_predicate in ref_location_predicates.items():
-            rdf_value = self._get_tag(tag, record)
-            if rdf_value:
-                self.graph.add((location, rdf_predicate, Literal(rdf_value)))
-            else:
-                # override from dataset metadata
-                if tag == "turismo:province":
-                    province_dict = {'alcoi': 'Alicante', 'torrent': 'Valencia', 'sagunto': 'Valencia',
-                                   'valencia': 'Valencia', 'dipcas': 'Castellon'}
-                    if organization in province_dict.keys():
-                        province = province_dict[organization]
-                        if province:
-                            self.graph.add((location, TURISMO.province, Literal(province)))
-                elif tag == "turismo:city":
-                    city_dict = {'alcoi': 'Alcoi', 'torrent': 'Torrent', 'sagunto': 'Sagunto'}
-                    if organization in city_dict.keys():
-                        city = city_dict[organization]
-                        if province:
-                            self.graph.add((location, TURISMO.province, Literal(city)))
+                child = child_predicate.split(':')
 
-        # Telecoms
-        ref_telecoms_predicates = {
-            "turismo:email": TURISMO.email,
-            "turismo:url": TURISMO.url,
-            "turismo:telephone": TURISMO.telephone,
-        }
-        telecom_rdf_values = []
-        for tag, rdf_predicate in ref_telecoms_predicates.items():
-            rdf_value = self._get_tag(tag, record)
-            if rdf_value:
-                telecom_rdf_values += [(rdf_value, rdf_predicate)]
+                rdf_value = self._get_tag(ontology, predicate, record)
+                prefix = v['info']['prefix']
 
-        if telecom_rdf_values:
-            telecoms = URIRef(TELECOMS[identifier])
-            self.graph.add((entity, TURISMO.hasTelecoms, telecoms))
-            self.graph.add((telecoms, RDF.type, TURISMO.Telecoms))
+                rdf_predicate = self.namespaces_dict[prefix][child[1].strip()]
+                if rdf_value is not None and rdf_value != "":
+                    if parent is not None:
+                        self.graph.add((entity, self.namespaces_dict[verb[0]][verb[1]], parent_entity))
+                        self.graph.add((parent_entity, RDF.type, self.namespaces_dict[parent[0]][parent[1]]))
 
-            for rdf_value, rdf_predicate in telecom_rdf_values:
-                self.graph.add((telecoms, rdf_predicate, Literal(rdf_value)))
-
+                    if type(rdf_value) in [str, int, float, bool]:
+                        self.graph.add((parent_entity, rdf_predicate, Literal(rdf_value)))
+                    else:
+                        self.graph.add((parent_entity, rdf_predicate, rdf_value))
         return
 
     def write_records(self, records):
@@ -334,8 +308,6 @@ class RDFSegitturWriter(object):
                 record = self._record_to_dict(r)
                 self._add_record_to_graph(record, count)
                 count += 1
-                # if count > 2:
-                #     break
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
