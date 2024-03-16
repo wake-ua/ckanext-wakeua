@@ -74,6 +74,26 @@ class WakeuaPlugin(plugins.SingletonPlugin, DefaultTranslation):
                 })
 
     def before_index(self, pkg_dict):
+        # fix utf-8 chars issues
+        for field in ["title", "notes"]:
+            if pkg_dict.get(field):
+                value = pkg_dict.get(field)
+                try:
+                    pkg_dict[field] = json.dumps(json.loads(pkg_dict[field]), ensure_ascii=False)
+                except Exception as e:
+                    pkg_dict[field] = value
+        # fix fr resources
+        for field in ["res_name", "res_description"]:
+            if pkg_dict.get(field):
+                fixed_field = []
+                for value in pkg_dict.get(field, []):
+                    try:
+                        fixed_value = json.dumps(json.loads(value), ensure_ascii=False)
+                        fixed_field += [fixed_value]
+                    except Exception as e:
+                        fixed_field += [value]
+                pkg_dict[field] = fixed_field
+        # fix tags
         extras_tag_string_schemaorg = pkg_dict.get('extras_tag_string_schemaorg', "")
         if extras_tag_string_schemaorg:
             pkg_dict["schemaorg_tags"] = [tag.strip() for tag in extras_tag_string_schemaorg.split(',')]
