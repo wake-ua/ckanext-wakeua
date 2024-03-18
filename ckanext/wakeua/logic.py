@@ -19,19 +19,6 @@ PREDICATOR_SEP  = '/'
 # Create an RDF URI node to use as the subject for multiple triples
 BASEURI = "https://tdata.dlsi.ua.es/recurso/turismo/"
 
-def get_id(ontology_dict):
-    id_predicate = None
-    prefix = None
-    ontology = None
-    id_prefix = None
-    for k, v in ontology_dict.items():
-        if v['info'].get('function') == "str_to_id":
-            id_predicate = k[1]
-            prefix = v['info'].get('prefix').lower().strip()
-            ontology = k[0]
-            id_prefix = id_predicate.split(':')[1].lower().strip()
-
-    return id_prefix, id_predicate, prefix, ontology
 
 def convert_resource_data(resource_id, file_format, context, response, offset, limit, sort, search_params):
 
@@ -118,15 +105,9 @@ def rdf_segittur_writer(fields, resource_metadata, package_metadata, datastore_i
         prefix = item['info'].get('prefix')
         predicate = item['info'].get('predicate')
         if  prefix and predicate:
-            if len(predicate.split(PREDICATOR_SEP)) > 1:
-                namespace_uri = BASEURI + prefix + '#'
-            else:
-                namespace_uri = item['info']['ontology']
+            namespace_uri = item['info']['ontology']
             namespace = Namespace(namespace_uri)
             prefixes += [(prefix, Namespace(namespace_uri))]
-
-    id_prefix, id_predicate, prefix, ontology = get_id(ontology_dict)
-    prefixes += [(id_prefix, Namespace(BASEURI + id_prefix + '#'))]
 
     for prefix, namespace in set(prefixes):
         g.bind(prefix, namespace)
@@ -152,6 +133,29 @@ class RDFSegitturWriter(object):
             record_dict[column] =  record[index]
             index += 1
         return record_dict
+
+    def _add_entity_namespace(self, predicate):
+        prefix = predicate.split(':')[1].lower().strip()
+        namespace_uri = BASEURI + prefix + '#'
+        namespace = Namespace(namespace_uri)
+        self.graph.bind(prefix, namespace)
+        self.namespaces_dict[prefix] = namespace
+        # print(prefix,  namespace_uri)
+        return prefix
+
+    def _get_id(self):
+        id_predicate = None
+        prefix = None
+        ontology = None
+        id_prefix = None
+        for k, v in self.ontology_dict.items():
+            if v['info'].get('function') == "str_to_id":
+                id_predicate = k[1]
+                prefix = v['info'].get('prefix').lower().strip()
+                ontology = k[0]
+                id_prefix = self._add_entity_namespace(id_predicate)
+
+        return id_prefix, id_predicate, prefix, ontology
 
     def _transform_value(self, value, function):
         if not function:
@@ -222,7 +226,7 @@ class RDFSegitturWriter(object):
         entity = None
 
         # identifier (MANDATORY)
-        entity_name, id_predicate, id_prefix, id_ontology = get_id(self.ontology_dict)
+        entity_name, id_predicate, id_prefix, id_ontology = self._get_id()
         if id_predicate:
             id_field = self.ontology_dict.get((id_ontology, id_predicate))['id']
             function = self.ontology_dict.get((id_ontology, id_predicate))['info'].get('function')
@@ -240,7 +244,8 @@ class RDFSegitturWriter(object):
             return None
 
         # default add location
-        location = URIRef(self.namespaces_dict['location'][identifier])
+        location_prefix = self._add_entity_namespace("turismo:Location")
+        location = URIRef(self.namespaces_dict[location_prefix][identifier])
         self.graph.add((entity, self.namespaces_dict['turismo']['hasLocation'], location))
         self.graph.add((location, RDF.type, self.namespaces_dict['turismo']['Location']))
         self.graph.add((location, self.namespaces_dict['turismo']['country'], Literal("España")))
@@ -267,12 +272,12 @@ class RDFSegitturWriter(object):
         for k, v in self.ontology_dict.items():
             ontology, predicate = k
             if ontology != id_ontology or predicate != id_predicate:
-                #TODO MAke this work for arbitrary parent levels
+                #TODO Make this work for arbitrary parent levels
                 if len(predicate.split(PREDICATOR_SEP)) == 3:
                     predicate_list = predicate.split('/')
-                    parent_name = v['info']['prefix']
                     verb = predicate_list[0].split(':')
                     parent = predicate_list[1].split(':')
+                    parent_name = self._add_entity_namespace(predicate_list[1])
                     parent_entity = URIRef(self.namespaces_dict[parent_name][identifier])
                     child_predicate = predicate_list[2]
                 elif len(predicate.split(PREDICATOR_SEP)) == 1:
@@ -308,7 +313,9 @@ class RDFSegitturWriter(object):
                 record = self._record_to_dict(r)
                 self._add_record_to_graph(record, count)
                 count += 1
+
             except Exception as e:
                 log.warn("Error converting #" + str(count)+ " record with id " + str(record.get('_id', '??'))
                          + ", Exception: " + str(e))
+                
         self.stream.write(self.graph.serialize(format='ttl'))
