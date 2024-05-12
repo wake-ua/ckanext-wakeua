@@ -35,7 +35,7 @@ def wakeua_extract_lang_value(field):
     if isinstance(field, dict):
         LANGS = config.get('ckan.locale_order') or ["es"]
         lang_code = toolkit.request.environ['CKAN_LANG']
-        default_lang = LANGS.split(' ')[0]
+        default_lang = LANGS[0]
         translated_field = field.get(lang_code, None)
         if not translated_field:
             translated_field = field.get(default_lang, None)
@@ -64,9 +64,12 @@ def wakeua_markdown_extract(text, extract_length=190):
         return h.markdown_extract(text, extract_length)
 
 
-def wakeua_truncate(text, length=30, indicator='...', whole_word=False):
+def wakeua_truncate(text, length=30, indicator='...'):
     string_text = wakeua_extract_lang_value(to_json_dict_safe(text))
-    return h.truncate(string_text, length, indicator, whole_word)
+    if len(string_text) > length+3:
+        return string_text[0:length]+indicator
+    else:
+        return string_text
 
 
 def to_json_dict_safe(text_input):
@@ -156,4 +159,4 @@ def wakeua_show_dataset_vocabulary_tags(data):
 
 
 def wakeua_truncate_facet_label(label):
-    return wakeua_truncate(label["display_name"], 35)
+    return wakeua_truncate(label["display_name"], 32)

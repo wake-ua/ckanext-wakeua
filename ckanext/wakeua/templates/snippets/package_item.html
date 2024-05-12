@@ -1,0 +1,9 @@
+
+{% ckan_extends %}
+
+
+{% block heading_title %}
+    <a href="{{ h.url_for('%s.read' % package.type, id=package.name) }}" title="{{ title }}">
+        {{h.wakeua_extract_lang_value(title)|truncate(80)}}
+    </a>
+{% endblock %}
